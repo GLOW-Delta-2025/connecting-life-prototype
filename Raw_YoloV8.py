@@ -1,26 +1,37 @@
-import cv2
 from ultralytics import YOLO
+import cv2
 
-model = YOLO('yolov8n.pt')  # yolov8n is the smallest model
-#open camera 
-cap = cv2.VideoCapture(0)  
+# Load the YOLOv8 model
+model = YOLO('yolov8m.pt')
 
-while True:
-    # Read a frame from the webcam
+def getCoordinate(x_min, y_min, x_max, y_max):
+    avg_x = (x_min + x_max)/2
+    avg_y = (y_min + y_max)/2
+    return avg_x, avg_y
+    
+video_path = 4  # Or use 0 for default webcam
+cap = cv2.VideoCapture(video_path)
+
+if not cap.isOpened():
+    print(f"Error: Could not open video at {video_path}")
+    exit()
+
+while True:  # Loop to process each frame
     ret, frame = cap.read()
     if not ret:
-        print("Failed to grab frame")
+        print("End of video stream")
         break
+    
+    
 
     # Perform inference on the frame
     results = model(frame)
 
-    # Draw bounding boxes on the frame
+    # Iterate through the detected objects in the current frame
     for result in results:
-        # Get the bounding boxes (xywh format) and class IDs
         boxes = result.boxes  # Get the bounding boxes
 
-        # Loop through the results and draw bounding boxes
+        # Iterate through each bounding box
         for box in boxes:
             # Get the coordinates in xyxy format
             xyxy_coords = box.xyxy[0].tolist()
@@ -40,13 +51,17 @@ while True:
             cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)  # Green rectangle
             cv2.putText(frame, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-    # Display the resulting frame
-    cv2.imshow("Webcam - YOLOv8 Face Detection", frame)
 
-    # Exit on pressing the 'q' key
+    # Display the processed frame
+    # import matplotlib.pyplot as plt
+    # plt.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+    
+    cv2.imshow('YOLOv8 Detection', frame)
+
+    # Check for 'q' key press to exit
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-# Release the webcam and close the window
+# Release the video capture object and close the display window
 cap.release()
 cv2.destroyAllWindows()
