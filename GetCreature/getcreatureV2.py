@@ -133,7 +133,7 @@ class Square:
     def __init__(self, path):
         self.path = path
         self.current_segment = 0
-        self.position = [path[0].x, path[0].y]
+        self.position = [path[0].x, path[0].y]  # Simple starting position at first dot
         self.progress = 0
         self.finished = False
         self.speed = SQUARE_SPEED * random.uniform(0.8, 1.2)
@@ -167,9 +167,9 @@ class Square:
 
     def draw(self):
         pygame.draw.rect(screen, GREEN, 
-                        (self.position[0] - SQUARE_SIZE/2,
-                         self.position[1] - SQUARE_SIZE/2,
-                         SQUARE_SIZE, SQUARE_SIZE))
+                       (self.position[0] - SQUARE_SIZE/2,
+                        self.position[1] - SQUARE_SIZE/2,
+                        SQUARE_SIZE, SQUARE_SIZE))
 
 # Create dots
 dots = [Dot(50, HEIGHT - 50, is_endpoint=True), Dot(WIDTH - 50, 50, is_endpoint=True)]
