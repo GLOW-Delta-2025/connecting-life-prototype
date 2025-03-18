@@ -5,6 +5,7 @@ import time
 
 # Load the YOLOv8 model (smallest model for efficiency)
 model = YOLO('yolov8n.pt')
+# model = YOLO('best.pt')
 
 # Create a blank 2D map (radar-style)
 width, height = 800, 600  # Map dimensions (you can change these based on your needs)
