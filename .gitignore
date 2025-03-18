@@ -1,4 +1,8 @@
 yolov8n.pt
 yolov8m.pt
+<<<<<<< HEAD
 best.pt
 venv
+=======
+venv/
+>>>>>>> origin/main
