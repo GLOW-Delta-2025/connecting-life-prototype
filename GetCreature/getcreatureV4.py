@@ -8,12 +8,12 @@ pygame.init()
 
 # Constants
 WIDTH, HEIGHT = 800, 600
-DOTS = 5
+DOTS = 7
 DOT_RADIUS = 8
-SQUARE_SIZE = 10
+SQUARE_SIZE = 20
 SQUARE_SPEED = 2
 POPULATION_SIZE = 20
-ZONE_SIZE = 80
+ZONE_SIZE = 120
 
 # Colors
 WHITE, BLACK, RED, GREEN = (255, 255, 255), (0, 0, 0), (255, 0, 0), (0, 255, 0)
@@ -160,41 +160,25 @@ class Zone:
         pass  # Zones don't move
 
 class Square:
-    def __init__(self, path):
-        self.path = path
-        self.current_segment = 0
-        start_zone = path[0]
+    def __init__(self, start_zone):
+        self.start_zone = start_zone
+        # Random position within start zone
         self.position = [
             random.uniform(start_zone.x + 10, start_zone.x + start_zone.size - 10),
             random.uniform(start_zone.y + 10, start_zone.y + start_zone.size - 10)
         ]
+        self.current_dot = None  # The dot currently carrying this square
         self.progress = 0
-        self.finished = False
+        self.next_dot = None
         self.speed = SQUARE_SPEED * random.uniform(0.8, 1.2)
+        self.finished = False
         self.stored = False
-        # Find closest dot to start from
-        self.find_next_dot()
-
-    def find_next_dot(self):
-        # Find closest dot to current position
-        min_dist = float('infinity')
-        closest_dot = None
-        for dot in dots[2:]:  # Skip zones, only look at moving dots
-            dist = math.sqrt((self.position[0] - dot.x)**2 + 
-                           (self.position[1] - dot.y)**2)
-            if dist < min_dist:
-                min_dist = dist
-                closest_dot = dot
-        if closest_dot:
-            self.path = [closest_dot]
-            self.current_segment = 0
-            self.progress = 0
+        self.pickup_range = 50  # Increased from 30 to 50
 
     def move(self):
         if self.stored or self.finished:
             return
 
-        # Check if in end zone
         end_zone = dots[1]  # B zone
         if end_zone.contains_point(self.position[0], self.position[1]):
             self.finished = True
@@ -202,33 +186,51 @@ class Square:
             end_zone.stored_squares.append(self)
             return
 
-        # If we need a new path
-        if self.current_segment >= len(self.path) - 1:
-            current_dot = self.path[-1]
-            # Choose random connected dot as next target
-            if current_dot.connections:
-                next_dot = random.choice(current_dot.connections)
-                self.path.append(next_dot)
-            else:
-                self.find_next_dot()
+        # If waiting to be picked up
+        if self.current_dot is None:
+            # Look for closest dot to pick up the square
+            min_dist = float('infinity')
+            closest_dot = None
+            for dot in dots[2:]:  # Skip zones
+                dist = math.sqrt((self.position[0] - dot.x)**2 + 
+                               (self.position[1] - dot.y)**2)
+                if dist < min_dist:
+                    min_dist = dist
+                    closest_dot = dot
+            
+            # If a dot is close enough, get picked up
+            if min_dist < self.pickup_range:
+                self.current_dot = closest_dot
+                self.next_dot = random.choice(closest_dot.connections)
+                self.progress = 0
             return
 
-        current_dot = self.path[self.current_segment]
-        next_dot = self.path[self.current_segment + 1]
-        
-        dx = next_dot.x - current_dot.x
-        dy = next_dot.y - current_dot.y
+        # Moving between dots
+        dx = self.next_dot.x - self.current_dot.x
+        dy = self.next_dot.y - self.current_dot.y
         distance = math.sqrt(dx**2 + dy**2)
         
         if distance > 0:
             self.progress += self.speed / distance
             
             if self.progress >= 1:
-                self.current_segment += 1
+                # Reached next dot, choose new target
+                self.current_dot = self.next_dot
+                if self.current_dot.connections:
+                    # Prefer dots closer to end zone when choosing next dot
+                    end_zone = dots[1]
+                    possible_next = self.current_dot.connections
+                    self.next_dot = min(possible_next, 
+                                      key=lambda d: math.dist((d.x, d.y), 
+                                                            (end_zone.x + end_zone.size/2, 
+                                                             end_zone.y + end_zone.size/2)))
+                else:
+                    self.current_dot = None  # Drop the square if no connections
                 self.progress = 0
             else:
-                self.position[0] = current_dot.x + dx * self.progress
-                self.position[1] = current_dot.y + dy * self.progress
+                # Update position along the line
+                self.position[0] = self.current_dot.x + dx * self.progress
+                self.position[1] = self.current_dot.y + dy * self.progress
 
     def draw(self):
         if not self.stored:
@@ -254,7 +256,7 @@ for i in range(2, len(dots)):  # Start from 2 to skip zones
         dots[i].connect(dots[j])
 
 # Create squares
-squares = [Square(dots[:1]) for _ in range(POPULATION_SIZE)]  # Just pass start zone
+squares = [Square(dots[0]) for _ in range(POPULATION_SIZE)]  # Pass start zone
 
 # Main loop
 running, clock = True, pygame.time.Clock()
