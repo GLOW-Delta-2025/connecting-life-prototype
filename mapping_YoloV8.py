@@ -10,12 +10,6 @@ model = YOLO('yolov8n.pt')
 width, height = 1200, 700  # Map dimensions (you can change these based on your needs)
 video_map = np.zeros((height, width, 3), dtype=np.uint8)
 
-# Add grid lines for reference
-for i in range(0, width, 50):
-    cv2.line(video_map, (i, 0), (i, height), (255, 255, 255), 1)
-for i in range(0, height, 50):
-    cv2.line(video_map, (0, i), (width, i), (255, 255, 255), 1)
-
 # Open the webcam feed
 cap = cv2.VideoCapture(4)
 
